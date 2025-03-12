@@ -1,0 +1,129 @@
+import pygame
+import sys
+
+# Initialize Pygame
+pygame.init()
+
+# Constants
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+FPS = 60
+GRAVITY = 1
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+
+# Set up the screen
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Platformer")
+
+# Player class
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface((50, 50))
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.x = 100
+        self.rect.y = SCREEN_HEIGHT - 150
+        self.change_x = 0
+        self.change_y = 0
+        self.on_ground = False
+
+    def update(self):
+        self.calc_gravity()
+        self.rect.x += self.change_x
+        self.rect.y += self.change_y
+
+        # Check for collisions with platforms
+        self.on_ground = False
+        for platform in platforms:
+            if self.rect.colliderect(platform.rect):
+                if self.change_y > 0:
+                    self.rect.bottom = platform.rect.top
+                    self.change_y = 0
+                    self.on_ground = True
+                    break
+
+    def calc_gravity(self):
+        if not self.on_ground:
+            self.change_y += GRAVITY
+        else:
+            self.change_y = 0
+
+    def jump(self):
+        if self.on_ground:
+            self.change_y = -15
+
+    def move_left(self):
+        self.change_x = -5
+
+    def move_right(self):
+        self.change_x = 5
+
+    def stop(self):
+        self.change_x = 0
+
+# Platform class
+class Platform(pygame.sprite.Sprite):
+    def __init__(self, x, y, width, height):
+        super().__init__()
+        self.image = pygame.Surface((width, height))
+        self.image.fill(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+# Create the player object
+player = Player()
+
+# Create some platforms
+platforms = pygame.sprite.Group()
+platform1 = Platform(100, SCREEN_HEIGHT - 100, 200, 20)
+platform2 = Platform(300, SCREEN_HEIGHT - 200, 200, 20)
+platform3 = Platform(500, SCREEN_HEIGHT - 300, 200, 20)
+
+# Create sprite groups
+all_sprites = pygame.sprite.Group()
+all_sprites.add(player)
+platforms.add(platform1, platform2, platform3)
+
+# Main game loop
+clock = pygame.time.Clock()
+
+while True:
+    # Event handling
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+    # Key press handling
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        player.move_left()
+    elif keys[pygame.K_RIGHT]:
+        player.move_right()
+    else:
+        player.stop()
+
+    if keys[pygame.K_SPACE]:
+        player.jump()
+
+    # Update all sprites
+    all_sprites.update()
+
+    # Fill the screen with white
+    screen.fill(WHITE)
+
+    # Draw all sprites
+    all_sprites.draw(screen)
+    platforms.draw(screen)
+
+    # Refresh the screen
+    pygame.display.flip()
+
+    # Maintain the frame rate
+    clock.tick(FPS)
